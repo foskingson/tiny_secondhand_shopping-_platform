@@ -42,6 +42,15 @@ def is_valid_price(price):
     except ValueError:
         return False
 
+def is_valid_message(text, max_length=500):
+    if not text.strip():
+        return False  # 공백 메시지
+    if len(text) > max_length:
+        return False  # 너무 김
+    if contains_html(text):  # 기존 XSS 필터
+        return False
+    return True
+
 # ---------------- DB ---------------- #
 def get_db():
     db = getattr(g, '_database', None)
@@ -511,24 +520,32 @@ def handle_private_message(data):
     room = f"{data['sender_id']}_{data['receiver_id']}"
     join_room(room)
 
+    message = data.get('message', '')
+
+    # ✅ 메시지 검증
+    if not is_valid_message(message):
+        emit('error', {'error': '부적절한 메시지입니다.'}, room=request.sid)
+        return
+
     db = get_db()
     cursor = db.cursor()
     msg_id = str(uuid.uuid4())
 
     cursor.execute("INSERT INTO message (id, sender_id, receiver_id, content) VALUES (?, ?, ?, ?)",
-                   (msg_id, data['sender_id'], data['receiver_id'], data['message']))
+                   (msg_id, data['sender_id'], data['receiver_id'], message))
     db.commit()
 
     emit('private_message', data, room=room)
 
 @socketio.on('broadcast_message')
 def handle_broadcast_message(data):
-    
+    message = data.get('message', '')
+
+    if not is_valid_message(message):
+        emit('error', {'error': '메시지 형식 오류'}, room=request.sid)
+        return
+
     data['timestamp'] = datetime.now().strftime('%H:%M:%S')
     emit('broadcast_message', data, broadcast=True)
-
-if __name__ == '__main__':
-    init_db()
-    socketio.run(app, debug=True)
 
 
