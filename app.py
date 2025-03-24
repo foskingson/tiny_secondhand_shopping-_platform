@@ -677,3 +677,6 @@ def handle_broadcast_message(data):
     emit('broadcast_message', data, broadcast=True)
 
 
+if __name__ == '__main__':
+    init_db() 
+    socketio.run(app, debug=True)
