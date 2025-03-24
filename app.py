@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_socketio import SocketIO, emit, join_room
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+import re
 
 # ---------------- 설정 ---------------- #
 app = Flask(__name__)
@@ -23,6 +24,10 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def contains_html(text):
+    """입력값에 < 또는 > 같은 HTML 태그가 있는지 확인"""
+    return bool(re.search(r'[<>]', text))
 
 # ---------------- DB ---------------- #
 def get_db():
@@ -106,27 +111,58 @@ def index():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        password = generate_password_hash(request.form['password'])
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        if contains_html(username):
+            flash('아이디에 HTML 태그를 포함할 수 없습니다.')
+            return redirect(url_for('register'))
+
+        if contains_html(password):
+            flash('비밀번호에 HTML 태그를 포함할 수 없습니다.')
+            return redirect(url_for('register'))
+
+        if not (4 <= len(username) <= 20):
+            flash('아이디는 4~20자여야 합니다.')
+            return redirect(url_for('register'))
+
+        if not re.match(r'^[a-zA-Z0-9_]+$', username):
+            flash('아이디는 영문, 숫자, 언더스코어만 사용 가능합니다.')
+            return redirect(url_for('register'))
+
+        if len(password) < 6:
+            flash('비밀번호는 최소 6자 이상이어야 합니다.')
+            return redirect(url_for('register'))
+
+        password = generate_password_hash(password)
         db = get_db()
         cursor = db.cursor()
         cursor.execute("SELECT * FROM user WHERE username = ?", (username,))
         if cursor.fetchone():
             flash('이미 존재하는 사용자명입니다.')
             return redirect(url_for('register'))
+
         user_id = str(uuid.uuid4())
         cursor.execute("INSERT INTO user (id, username, password) VALUES (?, ?, ?)",
                        (user_id, username, password))
         db.commit()
         flash('회원가입 성공! 로그인 해주세요.')
         return redirect(url_for('login'))
+
     return render_template('register.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        if contains_html(username):
+            flash('아이디에 HTML 태그를 포함할 수 없습니다.')
+            return redirect(url_for('register'))
+
+        if contains_html(password):
+            flash('비밀번호에 HTML 태그를 포함할 수 없습니다.')
+            return redirect(url_for('register'))
         db = get_db()
         cursor = db.cursor()
         cursor.execute("SELECT * FROM user WHERE username = ?", (username,))
