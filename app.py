@@ -7,12 +7,18 @@ from flask_socketio import SocketIO, emit, join_room
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import re
+from datetime import timedelta
+
+
 
 # ---------------- 설정 ---------------- #
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 DATABASE = 'market.db'
 socketio = SocketIO(app)
+
+# 세션 만료 시간 설정 (예: 30분)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
 # 이미지 업로드 설정
 UPLOAD_FOLDER = 'static/uploads'
