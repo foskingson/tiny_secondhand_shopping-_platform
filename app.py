@@ -513,10 +513,15 @@ def report():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    if request.method == 'POST':
+    if request.method == 'GET':
+        target_id = request.args.get('target_id', '')  # GET 파라미터로 target_id 받기
+        report_type = request.args.get('type', '')     # 유형 받기
+        return render_template('report.html', target_id=target_id, report_type=report_type)
+    elif request.method == 'POST':
         target_id = request.form['target_id'].strip()
         reason = request.form['reason'].strip()
         report_type = request.form['type'].strip()
+        print('📦 request.form:', request.form)  # 추가!
 
         # ✅ 유효성 검사
         if not is_valid_uuid(target_id):
