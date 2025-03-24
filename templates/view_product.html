@@ -2,14 +2,25 @@
 {% block title %}상품 상세{% endblock %}
 {% block content %}
 <h2>{{ product['title'] }}</h2>
+
 {% if session['user_id'] == product['seller_id'] %}
-    <form action="{{ url_for('delete_product', product_id=product['id']) }}" method="post" style="margin-top: 10px;">
-        <button type="submit" onclick="return confirm('정말 삭제하시겠습니까?')">삭제하기</button>
-    </form>
+    <!-- 수정 버튼 -->
+    <div style="margin-top: 10px;">
+        <a href="{{ url_for('edit_product', product_id=product['id']) }}">
+            <button type="button">수정하기</button>
+        </a>
+
+        <!-- 삭제 버튼 -->
+        <form action="{{ url_for('delete_product', product_id=product['id']) }}" method="post" style="display:inline;">
+            <button type="submit" onclick="return confirm('정말 삭제하시겠습니까?')">삭제하기</button>
+        </form>
+    </div>
 {% endif %}
+
 {% if product['image_filename'] %}
     <img src="{{ url_for('static', filename='uploads/' ~ product['image_filename']) }}" alt="상품 이미지" width="300"><br>
 {% endif %}
+
 <p><strong>가격:</strong> ₩{{ product['price'] }}</p>
 <p><strong>설명:</strong> {{ product['description'] }}</p>
 <p><strong>카테고리:</strong> {{ product['category'] or '없음' }}</p>

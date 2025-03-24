@@ -358,6 +358,75 @@ def view_product(product_id):
     seller = cursor.fetchone()
     return render_template('view_product.html', product=product, seller=seller)
 
+
+@app.route('/product/<product_id>/edit', methods=['GET', 'POST'])
+def edit_product(product_id):
+    if 'user_id' not in session:
+        flash('로그인이 필요합니다.')
+        return redirect(url_for('login'))
+
+    db = get_db()
+    cursor = db.cursor()
+
+    # 기존 상품 가져오기
+    cursor.execute("SELECT * FROM product WHERE id = ?", (product_id,))
+    product = cursor.fetchone()
+
+    if not product:
+        flash('상품이 존재하지 않습니다.')
+        return redirect(url_for('dashboard'))
+
+    # 본인 상품인지 확인
+    if product['seller_id'] != session['user_id']:
+        flash('수정 권한이 없습니다.')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        title = request.form['title'].strip()
+        description = request.form['description'].strip()
+        price = request.form['price'].strip()
+        category = request.form.get('category', '기타')
+        file = request.files.get('image')
+
+        # ✅ 유효성 검사
+        if contains_html(title) or not (2 <= len(title) <= 100):
+            flash('상품명은 2~100자 이내여야 하며 HTML 태그를 포함할 수 없습니다.')
+            return redirect(url_for('edit_product', product_id=product_id))
+
+        if contains_html(description) or not (10 <= len(description) <= 1000):
+            flash('설명은 10~1000자 이내여야 하며 HTML 태그를 포함할 수 없습니다.')
+            return redirect(url_for('edit_product', product_id=product_id))
+
+        if not is_valid_price(price):
+            flash('가격은 숫자로 입력해야 하며 0보다 커야 합니다.')
+            return redirect(url_for('edit_product', product_id=product_id))
+
+        # 이미지가 새로 업로드되면 교체
+        image_filename = product['image_filename']
+        if file and allowed_file(file.filename):
+            # 기존 이미지 삭제
+            if image_filename:
+                old_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            # 새 이미지 저장
+            image_filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+
+        # 업데이트
+        cursor.execute("""
+            UPDATE product SET title = ?, description = ?, price = ?, category = ?, image_filename = ?
+            WHERE id = ?
+        """, (title, description, price, category, image_filename, product_id))
+        db.commit()
+
+        flash('상품이 수정되었습니다.')
+        return redirect(url_for('view_product', product_id=product_id))
+
+    return render_template('edit_product.html', product=product)
+
+
+
 @app.route('/product/<product_id>/delete', methods=['POST'])
 def delete_product(product_id):
     if 'user_id' not in session:
