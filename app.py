@@ -51,6 +51,25 @@ def is_valid_message(text, max_length=500):
         return False
     return True
 
+def is_valid_uuid(val):
+    try:
+        uuid.UUID(val)
+        return True
+    except ValueError:
+        return False
+
+def is_valid_reason(reason, min_len=10, max_len=500):
+    if not reason.strip():
+        return False
+    if not (min_len <= len(reason) <= max_len):
+        return False
+    if contains_html(reason):
+        return False
+    return True
+
+def is_valid_report_type(report_type):
+    return report_type in ['user', 'product']
+
 # ---------------- DB ---------------- #
 def get_db():
     db = getattr(g, '_database', None)
@@ -365,18 +384,36 @@ def search():
 def report():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     if request.method == 'POST':
-        target_id = request.form['target_id']
-        reason = request.form['reason']
-        report_type = request.form['type']
+        target_id = request.form['target_id'].strip()
+        reason = request.form['reason'].strip()
+        report_type = request.form['type'].strip()
+
+        # ✅ 유효성 검사
+        if not is_valid_uuid(target_id):
+            flash('유효하지 않은 대상 ID입니다.')
+            return redirect(url_for('report'))
+
+        if not is_valid_reason(reason):
+            flash('신고 사유는 10~500자 사이여야 하며 HTML 태그를 포함할 수 없습니다.')
+            return redirect(url_for('report'))
+
+        if not is_valid_report_type(report_type):
+            flash('유효하지 않은 신고 유형입니다.')
+            return redirect(url_for('report'))
+
         report_id = str(uuid.uuid4())
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("INSERT INTO report (id, reporter_id, target_id, reason, type) VALUES (?, ?, ?, ?, ?)",
-                       (report_id, session['user_id'], target_id, reason, report_type))
+        cursor.execute(
+            "INSERT INTO report (id, reporter_id, target_id, reason, type) VALUES (?, ?, ?, ?, ?)",
+            (report_id, session['user_id'], target_id, reason, report_type)
+        )
         db.commit()
         flash('신고 접수 완료')
         return redirect(url_for('dashboard'))
+
     return render_template('report.html')
 
 @app.route('/inbox')
