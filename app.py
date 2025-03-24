@@ -521,7 +521,6 @@ def report():
         target_id = request.form['target_id'].strip()
         reason = request.form['reason'].strip()
         report_type = request.form['type'].strip()
-        print('📦 request.form:', request.form)  # 추가!
 
         # ✅ 유효성 검사
         if not is_valid_uuid(target_id):
