@@ -28,6 +28,6 @@
 
 {% if session['user_id'] != product['seller_id'] %}
     <a href="{{ url_for('chat', receiver_id=seller['id']) }}">판매자에게 메시지 보내기</a><br>
-    <a href="{{ url_for('report') }}?target_id={{ product['id'] }}&type=product">이 상품 신고하기</a>
+    <a href="{{ url_for('report', type='user', target_id=seller.id) }}">판매자 신고</a>
 {% endif %}
 {% endblock %}
