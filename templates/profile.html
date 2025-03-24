@@ -7,5 +7,6 @@
   소개글: <br>
   <textarea name="bio" rows="4" cols="50">{{ user.bio or '' }}</textarea><br>
   <button type="submit">프로필 업데이트</button>
+  <a href="{{ url_for('change_password') }}">비밀번호 변경</a>
 </form>
 {% endblock %}

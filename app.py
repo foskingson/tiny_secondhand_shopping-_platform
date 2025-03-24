@@ -302,6 +302,46 @@ def profile():
     user = cursor.fetchone()
     return render_template('profile.html', user=user)
 
+@app.route('/change_password', methods=['GET', 'POST'])
+def change_password():
+    if 'user_id' not in session:
+        flash('로그인이 필요합니다.')
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        current_password = request.form['current_password'].strip()
+        new_password = request.form['new_password'].strip()
+        confirm_password = request.form['confirm_password'].strip()
+
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+        user = cursor.fetchone()
+
+        # 현재 비밀번호 확인
+        if not check_password_hash(user['password'], current_password):
+            flash('현재 비밀번호가 일치하지 않습니다.')
+            return redirect(url_for('change_password'))
+
+        # 새 비밀번호 유효성 검사
+        if len(new_password) < 6:
+            flash('새 비밀번호는 최소 6자 이상이어야 합니다.')
+            return redirect(url_for('change_password'))
+
+        if new_password != confirm_password:
+            flash('비밀번호 확인이 일치하지 않습니다.')
+            return redirect(url_for('change_password'))
+
+        # 비밀번호 업데이트
+        hashed_pw = generate_password_hash(new_password)
+        cursor.execute("UPDATE user SET password = ? WHERE id = ?", (hashed_pw, session['user_id']))
+        db.commit()
+
+        flash('비밀번호가 성공적으로 변경되었습니다.')
+        return redirect(url_for('profile'))
+
+    return render_template('change_password.html')
+
 @app.route('/product/new', methods=['GET', 'POST'])
 def new_product():
     if 'user_id' not in session:
