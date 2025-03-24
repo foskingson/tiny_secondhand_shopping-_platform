@@ -70,6 +70,16 @@ def is_valid_reason(reason, min_len=10, max_len=500):
 def is_valid_report_type(report_type):
     return report_type in ['user', 'product']
 
+def log_admin_action(admin_id, action, target_id=None):
+    db = get_db()
+    cursor = db.cursor()
+    log_id = str(uuid.uuid4())
+    cursor.execute("""
+        INSERT INTO admin_log (id, admin_id, action, target_id)
+        VALUES (?, ?, ?, ?)
+    """, (log_id, admin_id, action, target_id))
+    db.commit()
+
 # ---------------- DB ---------------- #
 def get_db():
     db = getattr(g, '_database', None)
@@ -132,6 +142,14 @@ def init_db():
                 receiver_id TEXT NOT NULL,
                 amount REAL NOT NULL,
                 product_id TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+                             
+            CREATE TABLE IF NOT EXISTS admin_log (
+                id TEXT PRIMARY KEY,
+                admin_id TEXT NOT NULL,
+                action TEXT NOT NULL,
+                target_id TEXT,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             );
         """)
@@ -367,6 +385,7 @@ def delete_product(product_id):
             os.remove(img_path)
 
     cursor.execute("DELETE FROM product WHERE id = ?", (product_id,))
+    log_admin_action(session['user_id'], f"Deleted product", product_id)
     db.commit()
     flash('상품이 삭제되었습니다.')
     return redirect(url_for('dashboard'))
@@ -546,6 +565,9 @@ def handle_user_report():
 
     # 3. 신고 상태 처리
     cursor.execute("UPDATE report SET status = 'approved' WHERE id = ?", (report_id,))
+
+    # ✅ 관리자 로그 저장
+    log_admin_action(session['user_id'], f"Reported user deactivated", user_id)
     
     db.commit()
     flash('유저를 휴면 처리하고 상품을 삭제했습니다.')
