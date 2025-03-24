@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}관리자 페이지{% endblock %}
+{% block content %}
+<h2>관리자 페이지</h2>
+<p>총 사용자 수: {{ user_count }}</p>
+<p>총 상품 수: {{ product_count }}</p>
+
+<h3>신고된 항목 (처리 대기)</h3>
+<ul>
+    {% for report in reports %}
+        <li>
+            [{{ report['type'] }}] 대상 ID: {{ report['target_id'] }}<br>
+            신고자: {{ report['reporter_id'] }}<br>
+            이유: {{ report['reason'] }}<br>
+            상태: {{ report['status'] }}<br>
+            <form method="post" action="{{ url_for('handle_report') }}">
+                <input type="hidden" name="report_id" value="{{ report['id'] }}">
+                <input type="hidden" name="type" value="{{ report['type'] }}">
+                <input type="hidden" name="target_id" value="{{ report['target_id'] }}">
+                <button name="action" value="approve">승인 후 조치</button>
+                <button name="action" value="reject">신고 거절</button>
+            </form>
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}

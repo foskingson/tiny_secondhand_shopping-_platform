@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}신고하기{% endblock %}
+{% block content %}
+<h2>신고하기</h2>
+<form method="post">
+    <label>대상 ID: <input type="text" name="target_id" required></label><br>
+    <label>유형:
+        <select name="type">
+            <option value="user">사용자</option>
+            <option value="product">상품</option>
+        </select>
+    </label><br>
+    <label>신고 사유: <textarea name="reason" required></textarea></label><br>
+    <button type="submit">신고 접수</button>
+</form>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}메시지함{% endblock %}
+{% block content %}
+<h2>메시지함</h2>
+<ul>
+  {% for p in partners %}
+    <li><a href="{{ url_for('chat', receiver_id=p['id']) }}">{{ p['username'] }} 님과의 채팅</a></li>
+  {% endfor %}
+</ul>
+{% endblock %}

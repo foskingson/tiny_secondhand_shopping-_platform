@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}1:1 채팅{% endblock %}
+{% block content %}
+<h2>채팅 상대: {{ receiver_username }}</h2>
+<div id="chat-box">
+    {% for msg in messages %}
+        <p><strong>{{ msg['sender_id'] }}</strong>: {{ msg['content'] }}</p>
+    {% endfor %}
+</div>
+
+<form id="chat-form">
+    <input type="hidden" id="sender_id" value="{{ session['user_id'] }}">
+    <input type="hidden" id="receiver_id" value="{{ receiver_id }}">
+    <input type="text" id="message" placeholder="메시지를 입력하세요">
+    <button type="submit">전송</button>
+</form>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    const socket = io();
+    const form = document.getElementById('chat-form');
+    const chatBox = document.getElementById('chat-box');
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const sender = document.getElementById('sender_id').value;
+        const receiver = document.getElementById('receiver_id').value;
+        const msg = document.getElementById('message').value;
+
+        socket.emit('private_message', {
+            sender_id: "{{ session['user_id'] }}",
+            sender_name: "{{ user['username'] }}",  
+            receiver_id: "{{ receiver_id }}",
+            message: msg
+        });
+
+        document.getElementById('message').value = '';
+    });
+
+    socket.on('private_message', function(data) {
+        if (data.sender_id === document.getElementById('receiver_id').value ||
+            data.receiver_id === document.getElementById('receiver_id').value) {
+            const p = document.createElement('p');
+            p.innerHTML = `<strong>${data.sender_name}</strong>: ${data.message}`;
+            chatBox.appendChild(p);
+        }
+    });
+</script>
+{% endblock %}

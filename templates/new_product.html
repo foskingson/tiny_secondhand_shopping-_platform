@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}상품 등록{% endblock %}
+{% block content %}
+<h2>새 상품 등록</h2>
+<form method="post" enctype="multipart/form-data">
+    <label>상품명: <input type="text" name="title" required></label><br>
+    <label>설명: <textarea name="description" required></textarea></label><br>
+    <label>가격: <input type="text" name="price" required></label><br>
+    <label>카테고리:
+        <select name="category" required>
+            <option value="디지털 기기">디지털 기기</option>
+            <option value="생활 가전">생활 가전</option>
+            <option value="의류">의류</option>
+            <option value="도서">도서</option>
+            <option value="스포츠/레저">스포츠/레저</option>
+            <option value="뷰티">뷰티</option>
+            <option value="취미/게임">취미/게임</option>
+            <option value="기타">기타</option>
+        </select>
+    </label><br>
+    <label>상품 이미지:
+        <input type="file" name="image" accept="image/*">
+    </label><br>
+    <button type="submit">등록</button>
+</form>
+{% endblock %}

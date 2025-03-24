@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}대시보드{% endblock %}
+{% block content %}
+<h2>안녕하세요, {{ user['username'] }}님!</h2>
+
+<h3>전체 상품 목록</h3>
+<ul>
+    {% for product in products %}
+        <li>
+            <a href="{{ url_for('view_product', product_id=product['id']) }}">{{ product['title'] }}</a>
+            - ₩{{ product['price'] }}
+        </li>
+    {% endfor %}
+</ul>
+
+<h3>🗨️ 전체 채팅</h3>
+<div id="chat-box" style="border:1px solid #ccc; padding:10px; height:200px; overflow-y:scroll; background:#fff;"></div>
+
+<form id="chat-form">
+    <input type="text" id="chat-input" placeholder="메시지를 입력하세요" style="width:80%;">
+    <button type="submit">전송</button>
+</form>
+
+<script src="https://cdn.socket.io/3.1.3/socket.io.min.js"></script> 
+<script>
+    const socket = io();
+    const chatBox = document.getElementById('chat-box');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (message) {
+            socket.emit('broadcast_message', {
+                user: "{{ user['username'] }}",
+                message: message
+            });
+            chatInput.value = '';
+        }
+    });
+
+    socket.on('broadcast_message', function(data) {
+        const msg = document.createElement('p');
+        msg.innerHTML = `<strong>${data.user}</strong> [${data.timestamp}]: ${data.message}`;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+</script>
+
+{% endblock %}
+
+

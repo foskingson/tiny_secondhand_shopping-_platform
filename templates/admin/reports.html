@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}신고 관리{% endblock %}
+{% block content %}
+<h2>🚨 신고 관리</h2>
+
+<ul>
+  {% for report in reports %}
+    <li>
+      <strong>신고 대상:</strong> {{ report.target_id }} (유형: {{ report.type }})<br>
+      <strong>사유:</strong> {{ report.reason }}<br>
+
+      {% if report.type == 'user' %}
+      <form action="{{ url_for('handle_user_report') }}" method="post" style="margin-top:5px;">
+        <input type="hidden" name="user_id" value="{{ report.target_id }}">
+        <input type="hidden" name="report_id" value="{{ report.id }}">
+        <button type="submit" onclick="return confirm('정말 처리하시겠습니까?')">⚠️ 유저 정지 및 게시글 삭제</button>
+      </form>
+      {% else %}
+        <p>상품 신고는 다른 처리 로직에서 구현할 수 있습니다.</p>
+      {% endif %}
+    </li>
+    <hr>
+  {% endfor %}
+</ul>
+{% endblock %}

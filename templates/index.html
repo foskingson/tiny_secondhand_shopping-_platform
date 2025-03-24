@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block title %}홈{% endblock %}
+{% block content %}
+<h2>환영합니다!</h2>
+<p>중고 거래 마켓플레이스에 오신 걸 환영합니다.</p>
+<a href="{{ url_for('register') }}">회원가입</a> 또는 <a href="{{ url_for('login') }}">로그인</a> 하세요.
+{% endblock %}

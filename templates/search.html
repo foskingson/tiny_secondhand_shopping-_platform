@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}검색 결과{% endblock %}
+{% block content %}
+<h2>"{{ keyword }}"에 대한 검색 결과</h2>
+{% if products %}
+    <ul>
+        {% for product in products %}
+            <li>
+                <a href="{{ url_for('view_product', product_id=product['id']) }}">{{ product['title'] }}</a>
+                - ₩{{ product['price'] }}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>검색 결과가 없습니다.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}상품 상세{% endblock %}
+{% block content %}
+<h2>{{ product['title'] }}</h2>
+{% if session['user_id'] == product['seller_id'] %}
+    <form action="{{ url_for('delete_product', product_id=product['id']) }}" method="post" style="margin-top: 10px;">
+        <button type="submit" onclick="return confirm('정말 삭제하시겠습니까?')">삭제하기</button>
+    </form>
+{% endif %}
+{% if product['image_filename'] %}
+    <img src="{{ url_for('static', filename='uploads/' ~ product['image_filename']) }}" alt="상품 이미지" width="300"><br>
+{% endif %}
+<p><strong>가격:</strong> ₩{{ product['price'] }}</p>
+<p><strong>설명:</strong> {{ product['description'] }}</p>
+<p><strong>카테고리:</strong> {{ product['category'] or '없음' }}</p>
+<p><strong>판매자:</strong> {{ seller['username'] }}</p>
+
+{% if session['user_id'] != product['seller_id'] %}
+    <a href="{{ url_for('chat', receiver_id=seller['id']) }}">판매자에게 메시지 보내기</a><br>
+    <a href="{{ url_for('report') }}?target_id={{ product['id'] }}&type=product">이 상품 신고하기</a>
+{% endif %}
+{% endblock %}

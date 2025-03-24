@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}상품 관리{% endblock %}
+{% block content %}
+<h2>📦 전체 상품 관리</h2>
+
+<ul>
+  {% for product in products %}
+    <li>
+      <strong>{{ product.title }}</strong> - ₩{{ product.price }}<br>
+      설명: {{ product.description }}<br>
+      카테고리: {{ product.category }}<br>
+      판매자 ID: {{ product.seller_id }}<br>
+      <form action="{{ url_for('admin_delete_product', product_id=product.id) }}" method="post" style="margin-top:5px;">
+        <button type="submit" onclick="return confirm('정말 삭제하시겠습니까?')">❌ 삭제</button>
+      </form>
+    </li>
+    <hr>
+  {% endfor %}
+</ul>
+{% endblock %}
