@@ -35,6 +35,13 @@ def contains_html(text):
     """입력값에 < 또는 > 같은 HTML 태그가 있는지 확인"""
     return bool(re.search(r'[<>]', text))
 
+def is_valid_price(price):
+    try:
+        value = float(price)
+        return value > 0
+    except ValueError:
+        return False
+
 # ---------------- DB ---------------- #
 def get_db():
     db = getattr(g, '_database', None)
@@ -157,18 +164,26 @@ def register():
     return render_template('register.html')
 
 
+from datetime import datetime, timedelta
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        if contains_html(username):
-            flash('아이디에 HTML 태그를 포함할 수 없습니다.')
-            return redirect(url_for('register'))
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
 
-        if contains_html(password):
-            flash('비밀번호에 HTML 태그를 포함할 수 없습니다.')
-            return redirect(url_for('register'))
+        # ✅ 실패 횟수와 차단 시간 세션에 저장
+        if 'login_attempts' not in session:
+            session['login_attempts'] = 0
+        if 'lock_until' in session:
+            lock_time = datetime.fromisoformat(session['lock_until'])
+            if datetime.now() < lock_time:
+                flash(f'로그인 차단됨! 다시 시도: {lock_time.strftime("%H:%M:%S")}')
+                return redirect(url_for('login'))
+            else:
+                session.pop('lock_until', None)
+                session['login_attempts'] = 0  # 차단 해제 시 초기화
+
         db = get_db()
         cursor = db.cursor()
         cursor.execute("SELECT * FROM user WHERE username = ?", (username,))
@@ -181,15 +196,26 @@ def login():
 
             session['user_id'] = user['id']
             session['is_admin'] = bool(user['is_admin'])
+            session.permanent = True
+            session['login_attempts'] = 0  # 로그인 성공 시 초기화
+
             flash('로그인 성공!')
+            return redirect(url_for('admin' if user['is_admin'] else 'dashboard'))
 
-            if user['is_admin']:
-                return redirect(url_for('admin'))
+        # ✅ 실패: 카운트 증가
+        session['login_attempts'] += 1
+        if session['login_attempts'] >= 5:
+            # ✅ 차단 시간 10분 설정
+            lock_until = datetime.now() + timedelta(minutes=10)
+            session['lock_until'] = lock_until.isoformat()
+            flash('로그인 5회 실패로 10분간 차단되었습니다.')
+        else:
+            flash(f'로그인 실패! ({session["login_attempts"]}회)')
 
-            return redirect(url_for('dashboard'))
+        return redirect(url_for('login'))
 
-        flash('로그인 실패!')
     return render_template('login.html')
+
 
 
 @app.route('/logout')
@@ -236,12 +262,24 @@ def new_product():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        title = request.form['title']
-        description = request.form['description']
-        price = request.form['price']
+        title = request.form['title'].strip()
+        description = request.form['description'].strip()
+        price = request.form['price'].strip()
         category = request.form.get('category', '기타')
         file = request.files.get('image')
         image_filename = None
+
+        if contains_html(title) or not (2 <= len(title) <= 100):
+            flash('상품명은 2~100자 이내여야 하며 HTML 태그를 포함할 수 없습니다.')
+            return redirect(url_for('new_product'))
+
+        if contains_html(description) or not (10 <= len(description) <= 1000):
+            flash('설명은 10~1000자 이내여야 하며 HTML 태그를 포함할 수 없습니다.')
+            return redirect(url_for('new_product'))
+
+        if not is_valid_price(price):
+            flash('가격은 숫자로 입력해야 하며 0보다 커야 합니다.')
+            return redirect(url_for('new_product'))
 
         if file and allowed_file(file.filename):
             image_filename = secure_filename(file.filename)
@@ -259,6 +297,7 @@ def new_product():
         return redirect(url_for('dashboard'))
 
     return render_template('new_product.html')
+
 
 @app.route('/product/<product_id>')
 def view_product(product_id):
